@@ -95,7 +95,9 @@ The easiest way to use it: **double-click `PhishCheck.bat`** (or run `python -m 
 2. Drag the downloaded `.eml` file (from your Downloads folder or straight from the browser's download bar) onto the page.
 3. The verdict pops up with a risk score, SPF/DKIM/DMARC status, the reasons ranked by severity, and what to do next.
 
-<!-- Add a screenshot of the result pop-up as docs/gui.png, then remove these comment markers: ![Result pop-up](docs/gui.png) -->
+![PhishCheck drop zone](docs/home.png)
+
+![PhishCheck result pop-up for a test sample](docs/gui.png)
 
 The window is a tiny web server that runs only on your computer:
 
