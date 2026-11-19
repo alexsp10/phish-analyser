@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# PRIVACY: never commit real emails or reports about them.
+# Only the synthetic test emails under samples/ are allowed.
+*.eml
+*.mbox
+!samples/**/*.eml
+!samples/**/*.mbox
+*.html
+!src/phishcheck/ui.html
+.env
+
+# Built VS Code extension (contains a local path)
+*.vsix
+dist/

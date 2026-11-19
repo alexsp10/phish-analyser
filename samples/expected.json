@@ -1,0 +1,106 @@
+{
+  "phishing/01-lookalike-sender.eml": {
+    "verdict": "phishing",
+    "findings": [
+      "sender.lookalike_domain",
+      "links.lookalike"
+    ]
+  },
+  "phishing/02-display-name-and-link-tricks.eml": {
+    "verdict": "phishing",
+    "findings": [
+      "sender.display_name_brand",
+      "links.text_mismatch",
+      "links.ip_host",
+      "links.insecure_login",
+      "content.generic_greeting",
+      "content.credential_request"
+    ]
+  },
+  "phishing/03-forged-sender-auth-fail.eml": {
+    "verdict": "phishing",
+    "findings": [
+      "auth.dmarc_fail",
+      "auth.spf_fail",
+      "auth.forged_header",
+      "sender.return_path_mismatch"
+    ]
+  },
+  "phishing/04-reply-to-bec.eml": {
+    "verdict": "suspicious",
+    "findings": [
+      "sender.reply_to_mismatch",
+      "content.urgency",
+      "content.payment_request"
+    ]
+  },
+  "phishing/05-html-attachment.eml": {
+    "verdict": "phishing",
+    "findings": [
+      "attachments.html_file",
+      "attachments.html_credential_form",
+      "auth.dkim_missing"
+    ]
+  },
+  "phishing/06-double-extension.eml": {
+    "verdict": "phishing",
+    "findings": [
+      "attachments.dangerous_type",
+      "attachments.double_extension"
+    ]
+  },
+  "phishing/07-zip-with-script.eml": {
+    "verdict": "suspicious",
+    "findings": [
+      "attachments.archive_dangerous_content"
+    ]
+  },
+  "phishing/08-disguised-executable.eml": {
+    "verdict": "suspicious",
+    "findings": [
+      "attachments.type_mismatch"
+    ]
+  },
+  "phishing/09-link-tricks.eml": {
+    "verdict": "phishing",
+    "findings": [
+      "links.lookalike",
+      "links.idn",
+      "links.userinfo",
+      "links.ip_host",
+      "links.script_uri"
+    ]
+  },
+  "phishing/10-credential-form.eml": {
+    "verdict": "phishing",
+    "findings": [
+      "content.password_form",
+      "content.credential_request",
+      "content.generic_greeting"
+    ]
+  },
+  "clean/01-bank-statement.eml": {
+    "verdict": "clean",
+    "findings": []
+  },
+  "clean/02-personal-with-photo.eml": {
+    "verdict": "clean",
+    "findings": []
+  },
+  "clean/03-newsletter-via-esp.eml": {
+    "verdict": "clean",
+    "findings": [
+      "sender.return_path_mismatch"
+    ]
+  },
+  "clean/04-receipt-with-pdf.eml": {
+    "verdict": "clean",
+    "findings": [
+      "content.payment_request"
+    ]
+  },
+  "clean/05-docx-attachment.eml": {
+    "verdict": "clean",
+    "findings": []
+  }
+}

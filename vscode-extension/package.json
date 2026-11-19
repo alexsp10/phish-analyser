@@ -1,0 +1,66 @@
+{
+  "name": "phishcheck",
+  "displayName": "PhishCheck",
+  "description": "Check Gmail .eml files for phishing inside VS Code. Runs the local phishcheck analyser; nothing leaves your computer.",
+  "version": "0.1.0",
+  "publisher": "alexsp10",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexsp10/phish-analyser"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "keywords": ["phishing", "email", "security", "eml", "gmail"],
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      {
+        "command": "phishcheck.open",
+        "title": "Open PhishCheck",
+        "category": "PhishCheck",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "phishcheck.analyseFile",
+        "title": "Check with PhishCheck",
+        "category": "PhishCheck",
+        "icon": "$(shield)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "phishcheck.analyseFile",
+          "when": "resourceExtname == .eml || resourceExtname == .mbox",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "phishcheck.analyseFile",
+          "when": "resourceExtname == .eml || resourceExtname == .mbox",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "PhishCheck",
+      "properties": {
+        "phishcheck.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Python interpreter that has phishcheck installed (e.g. the phish-analyser .venv). Empty: use .venv in the open folder, then 'python'."
+        },
+        "phishcheck.brandsFile": {
+          "type": "string",
+          "default": "",
+          "description": "Optional brands JSON file with extra brands (e.g. your bank) to protect."
+        }
+      }
+    }
+  }
+}

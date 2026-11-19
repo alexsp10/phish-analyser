@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--CSP-->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhishCheck</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232f5bd3' d='M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3z'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f3f5f8; --panel: #ffffff; --text: #141820; --muted: #5b6472; --border: #dfe3e8; --code: #f0f2f5;
+  --accent: #2f5bd3; --accent-soft: #e9effd;
+  --phishing: #c0362c; --phishing-soft: #fdeceb; --suspicious: #b26a00; --suspicious-soft: #fff3df;
+  --clean: #2b7a4b; --clean-soft: #e6f4eb; --neutral-soft: #eef0f3;
+  --shadow: 0 24px 64px rgba(15, 23, 42, .28);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1216; --panel: #171c23; --text: #e7eaee; --muted: #9aa3b0; --border: #2a313a; --code: #222932;
+    --accent: #7ea2ff; --accent-soft: #1b2741;
+    --phishing: #ff6b61; --phishing-soft: #3a1c1a; --suspicious: #f0a640; --suspicious-soft: #382b14;
+    --clean: #5cc98a; --clean-soft: #15301f; --neutral-soft: #222831;
+    --shadow: 0 24px 64px rgba(0, 0, 0, .65);
+  }
+}
+/* Inside VS Code: follow the editor theme instead of the OS theme. */
+body.vscode-light {
+  --bg: var(--vscode-editor-background, #f3f5f8); --panel: #ffffff; --text: #141820; --muted: #5b6472; --border: #dfe3e8; --code: #f0f2f5;
+  --accent: #2f5bd3; --accent-soft: #e9effd;
+  --phishing: #c0362c; --phishing-soft: #fdeceb; --suspicious: #b26a00; --suspicious-soft: #fff3df;
+  --clean: #2b7a4b; --clean-soft: #e6f4eb; --neutral-soft: #eef0f3;
+  --shadow: 0 24px 64px rgba(15, 23, 42, .28);
+}
+body.vscode-dark, body.vscode-high-contrast {
+  --bg: var(--vscode-editor-background, #0f1216); --panel: #171c23; --text: #e7eaee; --muted: #9aa3b0; --border: #2a313a; --code: #222932;
+  --accent: #7ea2ff; --accent-soft: #1b2741;
+  --phishing: #ff6b61; --phishing-soft: #3a1c1a; --suspicious: #f0a640; --suspicious-soft: #382b14;
+  --clean: #5cc98a; --clean-soft: #15301f; --neutral-soft: #222831;
+  --shadow: 0 24px 64px rgba(0, 0, 0, .65);
+}
+.vscode-only { display: none; }
+body.in-vscode .vscode-only { display: inline; }
+body.in-vscode .browser-only { display: none; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; align-items: center; gap: 10px; padding: 18px 24px; font-weight: 650; font-size: 18px; }
+header .tag { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--clean); }
+main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 14px; }
+.drop { width: min(640px, 100%); background: var(--panel); border: 2px dashed var(--border); border-radius: 20px;
+  padding: 56px 28px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s, transform .15s; outline: none; }
+.drop:hover, .drop:focus-visible { border-color: var(--accent); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); transform: scale(1.015); }
+.drop h1 { font-size: 22px; margin: 18px 0 6px; }
+.drop p { margin: 0; color: var(--muted); }
+.drop .icon { width: 64px; height: 64px; border-radius: 18px; margin: 0 auto; display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent); }
+.btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--panel);
+  color: var(--text); border-radius: 10px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.drop .btn { margin-top: 22px; }
+.hint { width: min(640px, 100%); color: var(--muted); font-size: 13.5px; text-align: center; }
+.hint kbd { font: inherit; background: var(--panel); border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; }
+.error { width: min(640px, 100%); display: none; background: var(--phishing-soft); color: var(--phishing); border-radius: 10px; padding: 10px 14px; font-weight: 550; }
+.error.show { display: block; }
+.busy { display: none; align-items: center; gap: 10px; color: var(--muted); }
+.busy.show { display: flex; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 14px; }
+
+/* ---------------------------------------------------------------- modal */
+.overlay { position: fixed; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(8, 11, 16, .55); backdrop-filter: blur(4px); }
+.overlay.open { display: flex; animation: fade .15s ease-out; }
+.modal { width: min(780px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--panel);
+  border-radius: 18px; box-shadow: var(--shadow); animation: pop .2s ease-out; }
+.result + .result { border-top: 6px solid var(--bg); }
+.head { display: flex; align-items: center; gap: 20px; padding: 24px 26px; }
+.head.phishing { background: var(--phishing-soft); } .head.suspicious { background: var(--suspicious-soft); } .head.clean { background: var(--clean-soft); }
+.ring { flex: none; position: relative; width: 92px; height: 92px; }
+.ring svg { transform: rotate(-90deg); }
+.ring .num { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1.1; }
+.ring .num b { font-size: 26px; display: block; }
+.ring .num span { font-size: 11px; color: var(--muted); }
+.verdict { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.phishing .verdict, .phishing .ring b { color: var(--phishing); }
+.suspicious .verdict, .suspicious .ring b { color: var(--suspicious); }
+.clean .verdict, .clean .ring b { color: var(--clean); }
+.head h2 { margin: 4px 0 4px; font-size: 20px; line-height: 1.3; overflow-wrap: anywhere; }
+.head .from { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { font-size: 12px; font-weight: 650; padding: 2px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); }
+.chip.pass { color: var(--clean); } .chip.fail { color: var(--phishing); } .chip.none { color: var(--muted); }
+.section { padding: 16px 26px; border-top: 1px solid var(--border); }
+.section h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.finding { display: grid; grid-template-columns: 76px 1fr auto; gap: 2px 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.finding:first-of-type { border-top: 0; }
+.finding .title { font-weight: 600; }
+.finding .detail { grid-column: 2 / 4; color: var(--muted); font-size: 13.5px; overflow-wrap: anywhere; }
+.finding .pts { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.sev { align-self: start; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 2px 0; border-radius: 999px; }
+.sev.high { background: var(--phishing-soft); color: var(--phishing); }
+.sev.medium { background: var(--suspicious-soft); color: var(--suspicious); }
+.sev.low, .sev.info { background: var(--neutral-soft); color: var(--muted); }
+.good { list-style: none; margin: 0; padding: 0; }
+.good li { padding: 4px 0 4px 24px; position: relative; }
+.good li::before { content: "\2713"; position: absolute; left: 2px; color: var(--clean); font-weight: 700; }
+details summary { cursor: pointer; font-weight: 600; }
+details ul { margin: 8px 0 0; padding-left: 18px; }
+details li { margin: 4px 0; overflow-wrap: anywhere; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12.5px; background: var(--code); padding: 1px 6px; border-radius: 5px; }
+.advice { border-radius: 12px; padding: 14px 16px; border-left: 4px solid; }
+.advice.phishing { background: var(--phishing-soft); border-color: var(--phishing); }
+.advice.suspicious { background: var(--suspicious-soft); border-color: var(--suspicious); }
+.advice.clean { background: var(--clean-soft); border-color: var(--clean); }
+.advice b { display: block; margin-bottom: 2px; }
+.summary { padding: 18px 26px; font-weight: 600; }
+.actions { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 10px; padding: 14px 26px;
+  background: var(--panel); border-top: 1px solid var(--border); }
+.muted { color: var(--muted); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+@media (max-width: 560px) {
+  .head { flex-direction: column; align-items: flex-start; padding: 20px; }
+  .section, .actions, .summary { padding-left: 20px; padding-right: 20px; }
+  .finding { grid-template-columns: 1fr auto; }
+  .finding .sev { width: 70px; grid-column: 1; grid-row: 1; }
+  .finding .pts { grid-column: 2; grid-row: 1; text-align: right; }
+  .finding .title { grid-column: 1 / 3; }
+  .finding .detail { grid-column: 1 / 3; }
+  header .tag span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" style="color:var(--accent)" d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6z"/></svg>
+  PhishCheck
+  <div class="tag"><i class="dot"></i><span>Offline: emails never leave this computer</span></div>
+</header>
+
+<main>
+  <div class="drop" id="drop" role="button" tabindex="0" aria-label="Choose or drop an email file to analyse">
+    <div class="icon">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>
+      </svg>
+    </div>
+    <h1>Drop an email here</h1>
+    <p>.eml from Gmail, or a Google Takeout .mbox</p>
+    <button class="btn primary" type="button" id="choose">Choose file</button>
+    <input type="file" id="file" accept=".eml,.mbox,message/rfc822" hidden>
+  </div>
+  <div class="busy" id="busy" aria-live="polite"><div class="spinner"></div>Analysing...</div>
+  <div class="error" id="error" role="alert"></div>
+  <div class="hint">In Gmail open the email, click <kbd>&#8942;</kbd> then <kbd>Download message</kbd>, and drag the downloaded file here<span class="vscode-only"> while holding <kbd>Shift</kbd> (VS Code needs Shift to drop into a panel)</span>.
+    Don't forward the email to yourself first: forwarding replaces the headers PhishCheck checks.</div>
+</main>
+
+<footer>phishcheck __VERSION__ · links are shown defanged (hxxps://example[.]com) and are never opened</footer>
+
+<div class="overlay" id="overlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" id="modal">
+    <div id="results"></div>
+    <div class="actions">
+      <button class="btn" type="button" id="close">Close</button>
+      <button class="btn primary" type="button" id="again">Check another email</button>
+    </div>
+  </div>
+</div>
+
+<script nonce="__NONCE__">
+(function () {
+  "use strict";
+  var TOKEN = "__TOKEN__";
+  var MAX_UPLOAD = __MAX_UPLOAD__;
+  var drop = document.getElementById("drop");
+  var input = document.getElementById("file");
+  var busy = document.getElementById("busy");
+  var errorBox = document.getElementById("error");
+  var overlay = document.getElementById("overlay");
+  var results = document.getElementById("results");
+
+  // Every piece of email-derived text goes through textContent, never innerHTML.
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.classList.add("show");
+  }
+
+  function clearError() { errorBox.classList.remove("show"); }
+
+  function setBusy(on) {
+    busy.classList.toggle("show", on);
+    drop.style.pointerEvents = on ? "none" : "";
+  }
+
+  // ------------------------------------------------------------ drag and drop
+  var depth = 0;
+  document.addEventListener("dragenter", function (e) { e.preventDefault(); depth++; drop.classList.add("over"); });
+  document.addEventListener("dragover", function (e) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; });
+  document.addEventListener("dragleave", function () { depth = Math.max(0, depth - 1); if (!depth) drop.classList.remove("over"); });
+  document.addEventListener("drop", function (e) {
+    e.preventDefault();
+    depth = 0;
+    drop.classList.remove("over");
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length) analyse(files[0]);
+  });
+  drop.addEventListener("click", function () { chooseFile(); });
+  drop.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); chooseFile(); }
+  });
+  input.addEventListener("change", function () {
+    if (input.files.length) analyse(input.files[0]);
+    input.value = "";
+  });
+
+  // ------------------------------------------------------------ transport
+  // In a browser the page talks to the local phishcheck server with fetch().
+  // Inside the VS Code extension it talks to the extension with postMessage().
+  var vscodeApi = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : null;
+  var pending = {};
+  var nextId = 1;
+
+  if (vscodeApi) {
+    document.body.classList.add("in-vscode");
+    window.addEventListener("message", function (event) {
+      var m = event.data || {};
+      if (m.type === "result" && pending[m.id]) {
+        var p = pending[m.id];
+        delete pending[m.id];
+        if (m.error) p.reject(new Error(m.error)); else p.resolve(m.results);
+      } else if (m.type === "show") {
+        clearError(); setBusy(false); openResults(m.results);
+      } else if (m.type === "busy") {
+        clearError(); closeResults(); setBusy(!!m.on);
+      } else if (m.type === "error") {
+        setBusy(false); showError(m.error);
+      }
+    });
+    vscodeApi.postMessage({ type: "ready" });
+  }
+
+  function chooseFile() {
+    if (vscodeApi) vscodeApi.postMessage({ type: "pick" }); // native VS Code file dialog
+    else input.click();
+  }
+
+  function send(file) {
+    if (!vscodeApi) {
+      return fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "X-Phishcheck-Token": TOKEN,
+          "X-Filename": encodeURIComponent(file.name),
+          "Content-Type": "application/octet-stream"
+        },
+        body: file
+      })
+        .catch(function () { throw new Error("PhishCheck isn't running any more. Start it again and reload this page."); })
+        .then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok) throw new Error(data.error || "Analysis failed.");
+            return data.results;
+          });
+        });
+    }
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var id = nextId++;
+        var url = String(reader.result);
+        pending[id] = { resolve: resolve, reject: reject };
+        vscodeApi.postMessage({ type: "analyse", id: id, name: file.name, data: url.slice(url.indexOf(",") + 1) });
+      };
+      reader.onerror = function () { reject(new Error("Could not read that file.")); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function analyse(file) {
+    clearError();
+    if (!/\.(eml|mbox)$/i.test(file.name)) {
+      showError("“" + file.name + "” is not an email file. In Gmail use ⋮ → Download message to get an .eml file.");
+      return;
+    }
+    if (file.size > MAX_UPLOAD) { showError("That file is larger than 25 MB."); return; }
+    if (file.size === 0) { showError("That file is empty."); return; }
+    setBusy(true);
+    send(file)
+      .then(function (list) { openResults(list); })
+      .catch(function (err) { showError((err && err.message) || "Analysis failed."); })
+      .finally(function () { setBusy(false); });
+  }
+
+  // ------------------------------------------------------------ result pop-up
+  var SVG = "http://www.w3.org/2000/svg";
+
+  function ring(score) {
+    var wrap = el("div", "ring");
+    var size = 92, stroke = 8, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+    var svg = document.createElementNS(SVG, "svg");
+    svg.setAttribute("width", size); svg.setAttribute("height", size);
+    svg.setAttribute("aria-hidden", "true");
+    [["var(--border)", c], ["currentColor", c * (1 - Math.max(score, 1) / 100)]].forEach(function (spec, i) {
+      var circle = document.createElementNS(SVG, "circle");
+      circle.setAttribute("cx", size / 2); circle.setAttribute("cy", size / 2); circle.setAttribute("r", r);
+      circle.setAttribute("fill", "none"); circle.setAttribute("stroke-width", stroke);
+      circle.setAttribute("stroke", spec[0]);
+      if (i === 1) {
+        circle.setAttribute("stroke-linecap", "round");
+        circle.setAttribute("stroke-dasharray", c);
+        circle.setAttribute("stroke-dashoffset", spec[1]);
+      }
+      svg.appendChild(circle);
+    });
+    wrap.appendChild(svg);
+    var num = el("div", "num");
+    var b = el("b", null, score);
+    num.appendChild(b);
+    num.appendChild(el("span", null, "risk / 100"));
+    wrap.appendChild(num);
+    return wrap;
+  }
+
+  function chip(label, value) {
+    var v = (value || "none").toLowerCase();
+    var cls = v === "pass" ? "pass" : (/fail|permerror/.test(v) ? "fail" : "none");
+    return el("span", "chip " + cls, label + " " + (value || "n/a"));
+  }
+
+  function section(title) {
+    var s = el("div", "section");
+    s.appendChild(el("h3", null, title));
+    return s;
+  }
+
+  function renderResult(r, index) {
+    var block = el("article", "result");
+    var head = el("div", "head " + r.verdict);
+    var ringEl = ring(r.score);
+    ringEl.style.color = "var(--" + r.verdict + ")";
+    head.appendChild(ringEl);
+    var info = el("div");
+    info.appendChild(el("div", "verdict", r.verdict_label));
+    var title = el("h2", null, r.subject || "(no subject)");
+    if (index === 0) title.id = "result-title";
+    info.appendChild(title);
+    var sender = r.from.name ? r.from.name + " <" + r.from.address + ">" : (r.from.address || "(no sender)");
+    info.appendChild(el("div", "from", "From " + sender));
+    var chips = el("div", "chips");
+    chips.appendChild(chip("SPF", r.authentication.spf));
+    chips.appendChild(chip("DKIM", r.authentication.dkim));
+    chips.appendChild(chip("DMARC", r.authentication.dmarc));
+    info.appendChild(chips);
+    head.appendChild(info);
+    block.appendChild(head);
+
+    var findings = section(r.findings.length ? "Why (" + r.findings.length + ")" : "Findings");
+    if (!r.findings.length) findings.appendChild(el("div", "muted", "No warning signs found."));
+    r.findings.forEach(function (f) {
+      var row = el("div", "finding");
+      row.appendChild(el("span", "sev " + f.severity, f.severity));
+      row.appendChild(el("span", "title", f.title));
+      row.appendChild(el("span", "pts", f.points ? "+" + f.points : ""));
+      row.appendChild(el("span", "detail", f.detail));
+      findings.appendChild(row);
+    });
+    block.appendChild(findings);
+
+    if (r.good_signs.length) {
+      var good = section("Good signs");
+      var list = el("ul", "good");
+      r.good_signs.forEach(function (g) { list.appendChild(el("li", null, g)); });
+      good.appendChild(list);
+      block.appendChild(good);
+    }
+
+    if (r.links.length || r.attachments.length) {
+      var more = section("Details");
+      if (r.links.length) {
+        var d = el("details");
+        d.appendChild(el("summary", null, "Links (" + r.links.length + ", defanged so they can't be clicked)"));
+        var ul = el("ul");
+        r.links.slice(0, 50).forEach(function (l) {
+          var li = el("li");
+          li.appendChild(el("code", null, l.url));
+          if (l.text) li.appendChild(el("span", "muted", "  “" + l.text.slice(0, 80) + "”"));
+          ul.appendChild(li);
+        });
+        d.appendChild(ul);
+        more.appendChild(d);
+      }
+      if (r.attachments.length) {
+        var a = el("details");
+        a.appendChild(el("summary", null, "Attachments (" + r.attachments.length + ")"));
+        var al = el("ul");
+        r.attachments.forEach(function (x) {
+          var li = el("li", null, x.filename + " · " + x.content_type + " · " + x.size.toLocaleString() + " bytes");
+          li.appendChild(el("br"));
+          li.appendChild(el("code", null, "sha256 " + x.sha256));
+          al.appendChild(li);
+        });
+        a.appendChild(al);
+        more.appendChild(a);
+      }
+      block.appendChild(more);
+    }
+
+    var adviceWrap = el("div", "section");
+    var advice = el("div", "advice " + r.verdict);
+    advice.appendChild(el("b", null, "What to do"));
+    advice.appendChild(el("span", null, r.advice));
+    adviceWrap.appendChild(advice);
+    block.appendChild(adviceWrap);
+    return block;
+  }
+
+  var lastFocus = null;
+
+  function openResults(list) {
+    results.replaceChildren();
+    if (list.length > 1) {
+      var counts = { phishing: 0, suspicious: 0, clean: 0 };
+      list.forEach(function (r) { counts[r.verdict]++; });
+      var sum = el("div", "summary", list.length + " emails: " + counts.phishing + " likely phishing, " +
+        counts.suspicious + " suspicious, " + counts.clean + " with no strong indicators (highest risk first)");
+      sum.id = "result-title";
+      results.appendChild(sum);
+      list = list.slice().sort(function (a, b) { return b.score - a.score; });
+    }
+    list.forEach(function (r, i) { results.appendChild(renderResult(r, list.length > 1 ? 1 : i)); });
+    lastFocus = document.activeElement;
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden", "false");
+    document.getElementById("modal").scrollTop = 0;
+    document.getElementById("again").focus();
+  }
+
+  function closeResults() {
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden", "true");
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  document.getElementById("close").addEventListener("click", closeResults);
+  document.getElementById("again").addEventListener("click", function () { closeResults(); chooseFile(); });
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) closeResults(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && overlay.classList.contains("open")) closeResults(); });
+  document.getElementById("choose").addEventListener("click", function (e) { e.stopPropagation(); chooseFile(); });
+})();
+</script>
+</body>
+</html>

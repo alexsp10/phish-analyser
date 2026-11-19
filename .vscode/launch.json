@@ -1,0 +1,52 @@
+{
+  // Run and Debug panel (Ctrl+Shift+D): pick a configuration, then press F5.
+  // Everything runs as "python -m phishcheck", which Windows Smart App Control allows.
+  // For the in-editor panel, install the extension instead (see vscode-extension/README.md).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "PhishCheck: drag-and-drop window (browser)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "phishcheck",
+      "args": ["--gui"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "PhishCheck: analyse an email file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "phishcheck",
+      "args": ["${input:emailPath}"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "PhishCheck: analyse the open .eml file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "phishcheck",
+      "args": ["${file}"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "PhishCheck: demo on the test samples",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "phishcheck",
+      "args": ["samples", "--brands", "samples/demo-brands.json", "--html", "report.html"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "emailPath",
+      "type": "promptString",
+      "description": "Path to the .eml or .mbox file (tip: Shift+right-click the file in Explorer > Copy as path, then paste)",
+      "default": "${userHome}\\Downloads\\"
+    }
+  ]
+}
