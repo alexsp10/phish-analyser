@@ -19,8 +19,6 @@ from __future__ import annotations
 
 import io
 import json
-import mailbox
-import time
 import zipfile
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -88,7 +86,10 @@ def zip_bytes(files: dict[str, bytes]) -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         for name, data in files.items():
-            archive.writestr(zipfile.ZipInfo(name, date_time=(2026, 11, 18, 9, 0, 0)), data)
+            info = zipfile.ZipInfo(name, date_time=(2026, 11, 18, 9, 0, 0))
+            info.create_system = 3  # fixed "made on Unix" byte: identical output on Windows and Linux
+            info.external_attr = 0o644 << 16
+            archive.writestr(info, data)
     return buffer.getvalue()
 
 
@@ -343,20 +344,23 @@ def main() -> None:
 
     mbox_path = ROOT / "mbox" / "takeout-sample.mbox"
     mbox_path.parent.mkdir(parents=True, exist_ok=True)
-    mbox_path.unlink(missing_ok=True)
-    box = mailbox.mbox(str(mbox_path))
+    # Written by hand (not with the mailbox module, which uses the OS line ending) so the
+    # bytes are identical on every platform. mbox format: a "From " separator line before
+    # each message, and ">From " escaping for body lines that start with "From ".
+    parts = []
     for path in ("clean/01-bank-statement.eml", "phishing/01-lookalike-sender.eml"):
-        entry = mailbox.mboxMessage((ROOT / path).read_bytes())
-        entry.set_from("sample@phishcheck.test", time.gmtime(0))
-        box.add(entry)
-    box.flush()
-    box.close()
+        body = (ROOT / path).read_bytes()
+        body = b"\n".join(b">" + line if line.startswith(b"From ") else line for line in body.split(b"\n"))
+        parts.append(b"From sample@phishcheck.test Thu Jan  1 00:00:00 1970\n" + body.rstrip(b"\n") + b"\n\n")
+    mbox_path.write_bytes(b"".join(parts))
 
-    (ROOT / "expected.json").write_text(json.dumps(expected, indent=2) + "\n", encoding="utf-8")
-    (ROOT / "demo-brands.json").write_text(
-        json.dumps({"Northwind Bank": {"keywords": ["northwind"], "domains": ["northwindbank.example"]}}, indent=2)
-        + "\n",
-        encoding="utf-8",
+    def write_json(path: Path, data: object) -> None:
+        path.write_bytes((json.dumps(data, indent=2) + "\n").encode("utf-8"))  # LF on every OS
+
+    write_json(ROOT / "expected.json", expected)
+    write_json(
+        ROOT / "demo-brands.json",
+        {"Northwind Bank": {"keywords": ["northwind"], "domains": ["northwindbank.example"]}},
     )
     print(f"Wrote {len(SAMPLES)} samples, 1 mbox, expected.json and demo-brands.json to {ROOT}")
 

@@ -1,6 +1,7 @@
 From sample@phishcheck.test Thu Jan  1 00:00:00 1970
 Delivered-To: you@example.com
-Received: by 2002:a05:6a10:b::1 with SMTP id sample11; Wed, 18 Nov 2026 10:17:00 +0000
+Received:
+ by 2002:a05:6a10:b::1 with SMTP id sample11; Wed, 18 Nov 2026 10:17:00 +0000
 Received: from mx.sender.example (mx.sender.example. [198.51.100.25]) by
  mx.google.com with ESMTPS id sample11; Wed, 18 Nov 2026 10:17:00 +0000
 Authentication-Results: mx.google.com; dkim=pass
@@ -43,7 +44,8 @@ ps://northwindbank.example/">www.northwindbank.example</a></p></body></html>
 
 From sample@phishcheck.test Thu Jan  1 00:00:00 1970
 Delivered-To: you@example.com
-Received: by 2002:a05:6a10:1::1 with SMTP id sample1; Wed, 18 Nov 2026 09:07:00 +0000
+Received:
+ by 2002:a05:6a10:1::1 with SMTP id sample1; Wed, 18 Nov 2026 09:07:00 +0000
 Received: from mx.sender.example (mx.sender.example. [198.51.100.25]) by
  mx.google.com with ESMTPS id sample1; Wed, 18 Nov 2026 09:07:00 +0000
 Authentication-Results: mx.google.com; dkim=pass
